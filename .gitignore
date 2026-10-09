@@ -1,0 +1,6 @@
+corpus-pool/
+provenance/derived/
+provenance/Corpus/*
+!provenance/Corpus/Corpus.zip
+render-batches/
+webpage-worker/public/

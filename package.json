@@ -1,0 +1,21 @@
+{
+  "name": "hankan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ᄒᆞᆫ칸 (hankan): form filler for .hwp/.hwpx documents.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "hankan": "cli/hankan.js"
+  },
+  "scripts": {
+    "test": "node --test engine/test/*.test.js",
+    "corpus": "node tools/check/corpus.js",
+    "build:web": "node tools/web/build.js",
+    "serve:web": "node tools/web/build.js && node tools/web/serve.js",
+    "test:web": "node tools/web/build.js && node tools/web/smoke.js"
+  },
+  "engines": {
+    "node": ">=21.2"
+  }
+}

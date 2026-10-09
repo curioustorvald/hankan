@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- ᄒᆞᆫ set as a form: the strokes are rows of table cells, ㅇ is a ○ mark,
+       and the arae-a is the one filled cell. -->
+  <rect width="512" height="512" rx="112" fill="#1b2330"/>
+  <g fill="none" stroke="#fbfaf5" stroke-width="9">
+    <path d="M212 82h88v44h-88zM256 82v44"/>
+    <path d="M124 137h264v44H124zM168 137v44M212 137v44M256 137v44M300 137v44M344 137v44"/>
+    <ellipse cx="256" cy="234" rx="43" ry="35" stroke-width="14"/>
+    <path d="M124 342h44v44H124zM124 386h264v44H124zM168 386v44M212 386v44M256 386v44M300 386v44M344 386v44"/>
+  </g>
+  <rect x="234" y="287" width="44" height="44" fill="#ffd84d" stroke="#fbfaf5" stroke-width="9"/>
+</svg>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ᄒᆞᆫ칸 · 한글문서 양식 채우기</title>
+<meta name="description" content=".hwp·.hwpx 양식의 빈칸을 브라우저에서 바로 채웁니다. 파일은 어디로도 전송되지 않습니다.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <h1><img src="icons/icon.svg" alt="" width="28" height="28"> ᄒᆞᆫ칸 <span class="sub">한글문서 양식 채우기</span></h1>
+  <div class="actions">
+    <label class="button primary">양식 열기<input type="file" id="open" accept=".hwp,.hwpx" multiple hidden></label>
+    <button type="button" id="help-open" class="button">도움말</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="side">
+    <section class="panel">
+      <h2>양식</h2>
+      <ul id="form-list" class="form-list"></ul>
+      <p id="form-list-empty" class="hint">아직 연 양식이 없습니다.</p>
+      <label class="check" title="열린 양식과 적은 내용을 이 브라우저에만 저장해 두었다가, 다시 열면 이어서 할 수 있게 합니다. 끄면 지워집니다."><input type="checkbox" id="autosave"> 브라우저에 임시저장</label>
+      <p id="autosave-info" class="hint" hidden></p>
+    </section>
+
+    <section class="panel">
+      <h2>내 정보</h2>
+      <p class="hint">여러 양식에 공통으로 들어가는 값을 적어 두면, 양식마다 이름이 맞는 빈칸에 채워 넣습니다. 예: 성명, 주소, 휴대폰, 생년월일.</p>
+      <div id="profile-rows" class="profile-rows"></div>
+      <div class="row-buttons">
+        <button type="button" id="profile-add" class="button">항목 추가</button>
+        <button type="button" id="profile-apply" class="button primary">모든 양식에 채우기</button>
+      </div>
+      <label class="check"><input type="checkbox" id="profile-remember"> 이 브라우저에 기억하기</label>
+    </section>
+
+    <section class="panel">
+      <h2>여러 명 한꺼번에</h2>
+      <p class="hint">첫 줄이 항목 이름인 CSV(또는 JSON) 파일을 불러오면, 한 줄마다 열려 있는 양식을 하나씩 채워 ZIP 파일로 내려받습니다. 화면에서 직접 채운 값은 모든 줄에 공통으로 들어갑니다.</p>
+      <label class="button">CSV 불러오기<input type="file" id="csv" accept=".csv,.tsv,.txt,.json" hidden></label>
+      <p id="csv-info" class="hint"></p>
+      <label class="field" id="csv-name-wrap" hidden>파일 이름에 쓸 항목 <select id="csv-name"></select></label>
+      <button type="button" id="csv-run" class="button primary" disabled>모두 채워 ZIP으로 받기</button>
+    </section>
+  </aside>
+
+  <section class="content">
+    <div id="welcome" class="welcome">
+      <p class="big">.hwp · .hwpx 양식 파일을 여기에 끌어다 놓거나 <b>양식 열기</b>를 누르세요.</p>
+      <p>파일은 이 브라우저 안에서만 열리고 고쳐지며, 어디로도 보내지지 않습니다.</p>
+    </div>
+    <div id="form-view" hidden>
+      <div class="form-bar">
+        <div>
+          <h2 id="form-title"></h2>
+          <p id="form-stats" class="hint"></p>
+        </div>
+        <div class="row-buttons">
+          <label class="check toggle" title="양식에 인쇄된 안내문이나 OOO 같은 자리 표시도 고칠 수 있게 합니다"><input type="checkbox" id="edit-mode"> 글자 직접 고치기</label>
+          <button type="button" id="download-one" class="button primary">이 양식 내려받기</button>
+          <button type="button" id="download-all" class="button">모든 양식 ZIP으로 받기</button>
+        </div>
+      </div>
+      <p id="edit-hint" class="edit-hint" hidden>양식의 글자를 눌러 고칠 수 있습니다. <b>OOO</b>, <b>0000</b> 같은 자리 표시나 안내문을 실제 내용으로 바꾸고, 빈 칸에는 새로 적으세요. 고친 글자는 파란색으로 보이고, Esc를 누르면 원래대로 돌아갑니다. 표나 문단을 새로 만들 수는 없습니다.</p>
+      <div id="report" class="report" hidden></div>
+      <article id="outline" class="outline" aria-label="양식 내용"></article>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>본 제품은 한글과컴퓨터의 ᄒᆞᆫ글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.</p>
+  <p>채운 양식의 모양이 틀어질 수 있습니다. 중요한 문서라면 다른 프로그램으로 결과를 꼭 확인하세요. <button type="button" class="link" id="help-open-2">자세히</button></p>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="help" aria-labelledby="help-title">
+  <form method="dialog" class="dialog-close"><button class="button" aria-label="닫기">닫기</button></form>
+  <h2 id="help-title">도움말 및 정보</h2>
+
+  <h3>쓰는 법</h3>
+  <ol>
+    <li><b>양식 열기</b>로 .hwp 또는 .hwpx 양식을 엽니다. 여러 개를 한꺼번에 열 수 있습니다.</li>
+    <li>화면의 노란 칸에 값을 적습니다. 표의 빈 칸, 문단 안의 빈칸(<code>성명:　　　</code>), 날짜(<code>20　년　월　일</code>), 누름틀, 체크 상자(□, [ ])를 채울 수 있습니다.</li>
+    <li>여러 양식에 같은 값을 넣으려면 <b>내 정보</b>에 적고 <b>모든 양식에 채우기</b>를 누르세요. 항목 이름이 양식에 인쇄된 이름(성명, 주소 …)과 맞으면 들어가며, 이름 ↔ 성명, 휴대폰 ↔ 휴대전화처럼 흔한 동의어도 알아봅니다. 대리인·배우자 같은 다른 사람의 칸에는 들어가지 않습니다. 내 정보로 채운 칸은 초록색으로 보이며, 직접 고친 칸은 다시 채우기를 눌러도 그대로 둡니다.</li>
+    <li>양식에 <code>OOO</code>, <code>20OO. OO. OO.</code>, <code>※대량일 경우 뒤쪽 사용</code>처럼 자리 표시나 안내문이 적혀 있어 노란 칸이 생기지 않는 곳은 <b>글자 직접 고치기</b>를 켜고 그 글자를 눌러 고치세요. 아무것도 적혀 있지 않은 칸에도 적을 수 있습니다. 바뀐 글자만 바뀌고 나머지는 그대로 남습니다. 빨간색처럼 색이 있는 글자는 고치면 검은색이 됩니다. 고친 내용은 CSV로 여러 명을 채울 때에도 모든 파일에 들어갑니다.</li>
+    <li><b>이 양식 내려받기</b> 또는 <b>모든 양식 ZIP으로 받기</b>로 채운 파일을 받습니다. 원본 파일은 바뀌지 않습니다.</li>
+    <li>여러 사람 몫을 한 번에 만들려면 <b>CSV 불러오기</b>를 쓰세요. 한 줄이 한 사람입니다.</li>
+  </ol>
+  <p>날짜 칸에는 <code>2026-10-09</code>나 <code>오늘</code>을, 나뉜 번호 칸에는 <code>900101-1234567</code>처럼 적습니다. 체크 상자는 고를 항목을 누르면 됩니다.</p>
+
+  <h3>개인정보</h3>
+  <p>양식 파일과 입력한 내용은 모두 이 브라우저 안에서만 처리되며, 어떤 서버로도 보내지지 않습니다. <b>이 브라우저에 기억하기</b>를 켜면 내 정보가 이 브라우저에만 저장되고, 끄면 지워집니다. <b>브라우저에 임시저장</b>을 켜면 열린 양식과 적은 내용이 이 브라우저에만 저장되어, 창을 닫았다가 다시 열어도 이어서 할 수 있습니다. 끄면 지워집니다. 여러 사람이 쓰는 컴퓨터에서는 켜지 마세요.</p>
+
+  <h3>주의</h3>
+  <p>최대한 그대로 동작하도록 만들고 있지만, 채운 양식의 모양이 틀어질 가능성은 여전히 있습니다. 중요한 문서라면 한컴오피스 뷰어 등 다른 프로그램으로 결과를 꼭 확인하세요.</p>
+  <p>지원하는 파일: .hwp(ᄒᆞᆫ글 2002 이상), .hwpx. 암호가 걸린 문서, 배포용 문서, ᄒᆞᆫ글97 문서는 열 수 없습니다.</p>
+
+  <h3>자료의 출처와 저작권</h3>
+  <p>본 제품은 한글과컴퓨터의 ᄒᆞᆫ글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.</p>
+  <p>한컴, 한컴오피스, HWP, ᄒᆞᆫ글은 (주)한컴의 등록상표입니다. 본 프로젝트는 (주)한컴의 제휴, 후원 또는 승인을 받은 제품이 아니며, 해당 상표는 제품의 호환 대상 또는 관련 소프트웨어를 지칭하기 위한 목적으로만 사용됩니다.</p>
+  <p>ᄒᆞᆫ칸은 MIT 허가서로 배포됩니다.</p>
+</dialog>
+</body>
+</html>

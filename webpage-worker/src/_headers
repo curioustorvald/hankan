@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers.
+# Cloudflare response headers (Workers static assets read this file).
 # connect-src 'self' means the page cannot send anything to another site.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

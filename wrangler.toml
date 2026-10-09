@@ -1,9 +1,12 @@
-# Cloudflare Pages project: a static site, built by `npm run build:web`.
+# Cloudflare Worker with static assets only (no Worker script).
+# `wrangler deploy` runs the build below first: webpage-worker/public is
+# gitignored, so a fresh checkout has nothing to upload until it is built.
 name = "hankan"
 compatibility_date = "2026-09-01"
 
 [build]
-
+command = "npm run build:web"
+watch_dir = ["webpage-worker/src", "engine/src"]
 
 [assets]
-directory = "build/webpage-worker/src"
+directory = "./webpage-worker/public"

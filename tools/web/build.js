@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const SRC = join(ROOT, 'webpage-worker/src');
 const OUT = join(ROOT, 'webpage-worker/public');
-// Cloudflare Pages reads these itself; they are not part of the page.
+// Cloudflare reads _headers itself, and sw.js must not cache itself.
 const NOT_CACHED = new Set(['_headers', 'sw.js']);
 
 function files(dir) {

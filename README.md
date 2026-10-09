@@ -32,8 +32,8 @@ npm run serve:web   # 빌드한 뒤 http://127.0.0.1:8080/ 에서 띄우기
 npm run test:web    # 빌드한 뒤 헤드리스 Chromium으로 확인 (provenance/Corpus 필요)
 ```
 
-Cloudflare Pages 설정(`wrangler.toml`)은 저장소 루트에 있습니다. `npm run build:web`으로
-`webpage-worker/public`을 만든 뒤 루트에서 `wrangler pages deploy`만 하면 됩니다.
+Cloudflare Workers 설정(`wrangler.toml`)은 저장소 루트에 있습니다. 루트에서 `wrangler deploy`만
+하면 됩니다. `npm run build:web`으로 `webpage-worker/public`을 만드는 일은 wrangler가 먼저 해 줍니다.
 번들링이나 압축은 하지 않으므로, 올라간 코드가 곧 소스입니다.
 
 ## 사용법 (명령줄)

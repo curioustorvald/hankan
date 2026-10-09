@@ -3,8 +3,7 @@ name = "hankan"
 compatibility_date = "2026-09-01"
 
 [build]
-command = "npm run build:web"
-watch_dir = ["webpage-worker/src"]
+
 
 [assets]
-directory = "build/webpage-worker/public"
+directory = "build/webpage-worker/src"

@@ -14,6 +14,7 @@
   --profile-line: #6fbf86;
   --paper: #ffffff;
   --cell-line: #9aa5b5;
+  --rule: #3d4552;
   --danger: #b3261e;
   --edit-line: #8fb0e8;
   --edit-hover: #eaf1fd;
@@ -37,6 +38,7 @@
     --profile-line: #4c9a66;
     --paper: #1e242e;
     --cell-line: #4a5566;
+    --rule: #aeb7c4;
     --edit-line: #4a6aa0;
     --edit-hover: #222f45;
     --edited: #233a60;
@@ -124,6 +126,14 @@ body.dragging .welcome, body.dragging .outline { border-color: var(--accent); }
 .outline table { border-collapse: collapse; margin: 6px 0 10px; width: 100%; }
 .outline td { border: 1px solid var(--cell-line); padding: 3px 6px; vertical-align: middle; }
 .outline td > p:last-child { margin-bottom: 0; }
+/* Cells with the form's own borders (set on the element) and background. */
+.outline td.filled { background-color: var(--fill); }
+/* A crossed-out cell keeps its cross visible through an input. */
+.outline td.crossed .slot { background-color: transparent; }
+@media (prefers-color-scheme: dark) { .outline td.filled { background-color: color-mix(in srgb, var(--fill) 22%, var(--paper)); } }
+/* An empty cell is as tall as in the form (a gap or a rule between parts). */
+.outline:not(.editing) td.spacer { padding: 0; }
+.outline:not(.editing) td.spacer p { min-height: 0; margin: 0; font-size: 0; line-height: 0; }
 
 .outline input.slot, .outline textarea.slot {
   font: inherit; font-family: system-ui, sans-serif; font-size: .92em; color: var(--ink);

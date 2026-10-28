@@ -52,6 +52,11 @@ export class Hwp5Document {
     return this.styles.charShapes[paragraph.charShapeIdAt(pos)] ?? null;
   }
 
+  /** How a table cell's borders and background look (see hwp5/docinfo.js), or null. */
+  cellBorder(cell) {
+    return this.styles.borderFills[cell.borderFillId - 1] ?? null;
+  }
+
   paraAlign(paragraph) {
     return this.styles.paraShapes[paragraph.paraShapeId]?.align ?? 'justify';
   }

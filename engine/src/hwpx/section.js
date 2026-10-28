@@ -7,7 +7,7 @@
 //   <sec> holds <p>s ...................................... §10.3
 //   paragraph lists (<subList>) inside tables, text boxes,
 //   headers, footnotes, captions .......................... §10.9.3.4.2, Annex E (ParaListType)
-//   <tbl> rowCnt/colCnt, <tr>, <tc name>, <cellAddr>,
+//   <tbl> rowCnt/colCnt, <tr>, <tc name borderFillIDRef>, <cellAddr>,
 //   <cellSpan> ............................................ §10.9.3
 //   <fieldBegin> (id, type, name, dirty, parameters) and
 //   <fieldEnd beginIDRef> ................................. §10.7.3, §10.7.5
@@ -143,6 +143,8 @@ export class HwpxCell {
     this.height = Number(sz?.attr('height') ?? 0);
     /** "셀 필드 이름" (owpml §10.9.3.4.2). */
     this.name = tc.attr('name') || null;
+    /** "테두리/배경 아이디 참조값" (owpml §10.9.3.4.2). */
+    this.borderFillId = Number(tc.attr('borderFillIDRef') ?? 0);
   }
 
   get paragraphs() { return this.list.paragraphs; }

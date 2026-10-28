@@ -78,7 +78,7 @@
 
 <footer class="footer">
   <p>본 제품은 한글과컴퓨터의 ᄒᆞᆫ글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.</p>
-  <p>채운 양식의 모양이 틀어질 수 있습니다. 중요한 문서라면 다른 프로그램으로 결과를 꼭 확인하세요. <button type="button" class="link" id="help-open-2">자세히</button></p>
+  <p>채운 양식의 모양이 틀어질 수 있습니다. 중요한 문서라면 다른 프로그램으로 결과를 꼭 확인하세요. <button type="button" class="link" id="help-open-2">자세히</button> · <button type="button" class="link" id="changes-open">바뀐 점</button></p>
 </footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -109,6 +109,24 @@
   <p>본 제품은 한글과컴퓨터의 ᄒᆞᆫ글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.</p>
   <p>한컴, 한컴오피스, HWP, ᄒᆞᆫ글은 (주)한컴의 등록상표입니다. 본 프로젝트는 (주)한컴의 제휴, 후원 또는 승인을 받은 제품이 아니며, 해당 상표는 제품의 호환 대상 또는 관련 소프트웨어를 지칭하기 위한 목적으로만 사용됩니다.</p>
   <p>ᄒᆞᆫ칸은 <a href="https://github.com/curioustorvald/hankan" target="_blank" rel="noopener noreferrer">MIT 허가서로 배포됩니다.</a></p>
+  <p><button type="button" class="link" id="changes-open-2">바뀐 점 보기</button></p>
+</dialog>
+
+<dialog id="changes" aria-labelledby="changes-title">
+  <form method="dialog" class="dialog-close"><button class="button" aria-label="닫기">닫기</button></form>
+  <h2 id="changes-title">바뀐 점</h2>
+
+  <h3>2026-10-29</h3>
+  <ul>
+    <li>표를 원래 양식의 모양대로 보여 줍니다. 선이 있고 없음, 선의 굵기와 색, 칸의 배경색, 빗금 친 칸이 양식 그대로 보입니다.</li>
+    <li>양식의 부분 사이를 띄우려고 넣은 빈 줄과 빗금으로 지운 칸은 이제 채울 칸으로 잡지 않습니다.</li>
+    <li>그 덕분에 일부 칸의 이름이 짧아졌습니다(예: <code>제호.귀하@1</code> → <code>귀하</code>). CSV 열 이름에 예전 이름을 그대로 적어 두었다면 확인해 주세요.</li>
+  </ul>
+
+  <h3>2026-10-09</h3>
+  <ul>
+    <li>첫 판: 표의 빈 칸, 문단 안의 빈칸, 날짜, 누름틀, 체크 상자 채우기. 내 정보와 CSV로 여러 양식과 여러 사람 몫을 한꺼번에 채우기. 글자 직접 고치기. 브라우저에 임시저장.</li>
+  </ul>
 </dialog>
 </body>
 </html>

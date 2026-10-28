@@ -1,20 +1,25 @@
 // 본 제품은 한글과컴퓨터의 ᄒᆞᆫ글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.
 //
 // The parts of Contents/header.xml the filler reads: fonts, character
-// properties and paragraph alignment, in the same shape as hwp5/docinfo.js;
-// and its one edit of the header: adding a black copy of a charPr, for text
-// written over coloured text.
+// properties, paragraph alignment and border/fills, in the same shape as
+// hwp5/docinfo.js; and its one edit of the header: adding a black copy of a
+// charPr, for text written over coloured text.
 //
 // Sources (owpml-ksx6101): fontfaces / fontface (lang) / font (id, face)
 // §9.3.2; charProperties (itemCnt) §9.3.4.1; charPr (id, height,
 // textColor, useFontSpace) with fontRef, ratio, spacing, relSz, bold,
 // italic §9.3.4.2 (textColor defaults to #000000: Annex XSD); paraPr /
-// align (horizontal) §9.3.8.2.2.
+// align (horizontal) §9.3.8.2.2; borderFill (id) with slash, backSlash,
+// leftBorder … diagonal (type, width in mm, color) and fillBrush /
+// winBrush (faceColor) §9.3.3.2; line types and widths §7.3 (LineType2,
+// LineWidth). Colours other than #rrggbb (corpus: "none", "#FF000000"
+// on borders of type NONE) count as no colour.
 
 import { XmlDocument } from './xml.js';
 
 const LANG = { HANGUL: 'hangul', LATIN: 'latin', HANJA: 'hanja', JAPANESE: 'japanese', OTHER: 'other', SYMBOL: 'symbol', USER: 'user' };
 export const LANGS = Object.values(LANG);
+const SIDES = { left: 'leftBorder', right: 'rightBorder', top: 'topBorder', bottom: 'bottomBorder', diagonal: 'diagonal' };
 const ALIGN = { JUSTIFY: 'justify', LEFT: 'left', RIGHT: 'right', CENTER: 'center', DISTRIBUTE: 'distribute', DISTRIBUTE_SPACE: 'divide' };
 
 export class HwpxHeader {
@@ -52,6 +57,9 @@ export class HwpxHeader {
     for (const pp of all('paraPr')) {
       this.paraShapes[Number(pp.attr('id'))] = { align: ALIGN[[...pp.descendants('align')][0]?.attr('horizontal')] ?? 'justify' };
     }
+    /** By id, as hwp5/docinfo.js borderFill() gives them. */
+    this.borderFills = [];
+    for (const bf of all('borderFill')) this.borderFills[Number(bf.attr('id'))] = borderFill(bf);
   }
 
   get modified() {
@@ -101,4 +109,21 @@ export class HwpxHeader {
     if (new Set(ids).size !== ids.length) problems.push('header: repeated charPr id');
     return problems;
   }
+}
+
+const colourOrNone = (c) => (/^#[0-9a-f]{6}$/i.test(c ?? '') ? c.toLowerCase() : null);
+
+function borderFill(bf) {
+  const lines = Object.fromEntries(Object.entries(SIDES).map(([side, local]) => {
+    const el = bf.first(local);
+    const type = el?.attr('type') ?? 'NONE';
+    return [side, type === 'NONE' ? null : { type, width: parseFloat(el.attr('width')) || 0.1, color: colourOrNone(el.attr('color')) ?? '#000000' }];
+  }));
+  const shown = (local) => !!bf.first(local) && (bf.first(local).attr('type') ?? 'NONE') !== 'NONE';
+  return {
+    ...lines,
+    slash: shown('slash'),
+    backSlash: shown('backSlash'),
+    fill: colourOrNone(bf.first('fillBrush')?.first('winBrush')?.attr('faceColor')),
+  };
 }

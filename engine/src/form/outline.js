@@ -5,7 +5,7 @@
 // slot sits in them. Not a layout: positions on the page are not computed.
 //
 //   { type: 'p', align, segments: [{ text, bold, color?, p?, start?, end? } | { slot, option?, size }] }
-//   { type: 'table', rows, cols, cells: [{ row, col, rowSpan, colSpan, slot?, blocks }] }
+//   { type: 'table', rows, cols, cells: [{ row, col, rowSpan, colSpan, height, border?, slot?, blocks }] }
 //
 // `size` is the number of code units the slot covers, as a hint for how
 // wide to draw it. `color` ('#rrggbb') is given for coloured text only
@@ -14,6 +14,12 @@
 // (paragraphList order), code units [start, end). An empty paragraph has
 // one such segment with no text, where text can be put in, if it has a
 // character style for the text to take. Tabs have no range.
+//
+// A cell's `border` is how the form draws it: its four sides, diagonals and
+// background (hwp5/docinfo.js borderFill(), hwpx/header.js); forms are laid
+// out with these (a heading row between thick rules, no outer verticals, a
+// gap row with no sides), so the outline keeps them. `height` is the cell's
+// height in HWPUNIT (1/7200 inch).
 
 import { paragraphList } from './edit.js';
 import { isColoured } from './colour.js';
@@ -114,8 +120,10 @@ function tableBlock(ctx, table) {
     cols: table.cols,
     cells: table.cells.map((c) => {
       const slot = ctx.cells.get(c.list);
+      const border = ctx.doc.cellBorder ? ctx.doc.cellBorder(c) : null;
       return {
-        row: c.row, col: c.col, rowSpan: c.rowSpan, colSpan: c.colSpan,
+        row: c.row, col: c.col, rowSpan: c.rowSpan, colSpan: c.colSpan, height: c.height,
+        ...(border ? { border } : {}),
         ...(slot ? { slot: slot.id } : {}),
         blocks: slot ? [] : c.paragraphs.flatMap((p) => paragraphBlocks(ctx, p)),
       };

@@ -117,12 +117,18 @@ function table(b, form) {
       const td = document.createElement('td');
       if (c.rowSpan > 1) td.rowSpan = c.rowSpan;
       if (c.colSpan > 1) td.colSpan = c.colSpan;
+      if (c.border) cellBorder(td, c.border);
       const slot = c.slot !== undefined ? form.byId.get(c.slot) : null;
       if (slot) {
-        td.className = 'slot-cell';
+        td.classList.add('slot-cell');
         td.append(cellInput(slot, form));
       } else {
         td.append(...c.blocks.map((x) => block(x, form)));
+        // An empty cell (a gap row, a thin rule row) keeps its own height.
+        if (c.blocks.every(blank)) {
+          td.classList.add('spacer');
+          td.style.height = `${(c.height / 7200) * 96}px`;
+        }
       }
       tr.append(td);
     }
@@ -130,6 +136,45 @@ function table(b, form) {
   }
   t.append(body);
   return t;
+}
+
+const blank = (b) => b.type === 'p' && b.segments.every((s) => s.slot === undefined && !s.text.trim());
+
+/** CSS border styles for the line types of owpml-ksx6101 §7.3 (others print solid). */
+const LINE_STYLE = {
+  DOT: 'dotted', CIRCLE: 'dotted', DASH: 'dashed', DASH_DOT: 'dashed', DASH_DOT_DOT: 'dashed', LONG_DASH: 'dashed',
+  DOUBLE_SLIM: 'double', SLIM_THICK: 'double', THICK_SLIM: 'double', SLIM_THICK_SLIM: 'double', DOUBLEWAVE: 'double',
+};
+
+/** Black lines take the page's rule colour, so that they show in dark mode too. */
+const ink = (color) => (!color || color === '#000000' ? 'var(--rule)' : color);
+
+function line(l) {
+  if (!l) return 'none';
+  const style = LINE_STYLE[l.type] ?? 'solid';
+  const px = Math.max(style === 'double' ? 3 : 1, Math.round((l.width * 96) / 25.4));
+  return `${px}px ${style} ${ink(l.color)}`;
+}
+
+/** A cell drawn with the form's own borders, diagonals and background. */
+function cellBorder(td, b) {
+  td.style.borderLeft = line(b.left);
+  td.style.borderRight = line(b.right);
+  td.style.borderTop = line(b.top);
+  td.style.borderBottom = line(b.bottom);
+  // White is the paper itself.
+  if (b.fill && !/^#(f[a-f]){3}$/.test(b.fill)) {
+    td.classList.add('filled');
+    td.style.setProperty('--fill', b.fill);
+  }
+  // A gradient whose middle runs corner to corner: "/" for slash, "\" for back-slash.
+  const c = ink(b.diagonal?.color);
+  const stroke = (dir) => `linear-gradient(${dir}, transparent calc(50% - .6px), ${c} calc(50% - .6px), ${c} calc(50% + .6px), transparent calc(50% + .6px))`;
+  const diagonals = [b.slash && stroke('to top left'), b.backSlash && stroke('to top right')].filter(Boolean);
+  if (diagonals.length) {
+    td.classList.add('crossed');
+    td.style.backgroundImage = diagonals.join(', ');
+  }
 }
 
 function describe(slot) {

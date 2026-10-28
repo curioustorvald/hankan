@@ -695,6 +695,12 @@ async function restoreSession() {
 const restored = restoreSession();
 
 for (const id of ['help-open', 'help-open-2']) $(id).onclick = () => $('help').showModal();
+for (const id of ['changes-open', 'changes-open-2']) {
+  $(id).onclick = () => {
+    $('help').close();
+    $('changes').showModal();
+  };
+}
 
 // Files opened with the installed app ("연결 프로그램").
 if ('launchQueue' in window) {

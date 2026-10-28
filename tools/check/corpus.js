@@ -55,6 +55,9 @@ function files(kind) {
   return readdirSync(dir).filter((f) => /\.hwpx?$/i.test(f)).sort().slice(0, limit).map((f) => [f, dir + f]);
 }
 
+/** C12: how often neighbouring cells' border/fills agree on the side they share. */
+const shared = { across: [0, 0], down: [0, 0] };
+
 async function checkHwp5() {
   const t = new Tally();
   let unsupported = 0;
@@ -73,6 +76,12 @@ async function checkHwp5() {
     if (doc.header.compressed) {
       const { trailer } = decodeStream(doc.cfb.read('DocInfo'), true);
       t.check('C1 compressed stream has CRC/size trailer (DocInfo)', trailer, name, 'DocInfo');
+    }
+    const fills = doc.styles.records.filter((x) => x.tag === DOCINFO.BORDER_FILL);
+    for (const { data: d } of fills) {
+      t.check('C12 border/fill: 5 lines of 6 bytes (type ≤ 17, width ≤ 15, then a colour)',
+        d.length >= 40 && [2, 8, 14, 20, 26].every((o) => d[o] <= 17 && d[o + 1] <= 15), name, () => Array.from(d.subarray(0, 32)).join());
+      if (d.length >= 40 && viewOf(d).getUint32(32, true) & 1) t.check('C12 solid fill colour top byte 0 or ff', d[39] === 0 || d[39] === 0xff, name, () => `${d[39]}`);
     }
     for (const s of doc.sections) {
       const raw = doc.cfb.read(s.path);
@@ -138,7 +147,7 @@ async function checkHwp5() {
         for (const list of c.lists) {
           if (list.header) t.check('C4 list paragraphs follow their LIST_HEADER', list.declaredCount === list.paragraphs.length, name, () => `${c.idString}: ${list.declaredCount} declared, ${list.paragraphs.length} found`);
         }
-        if (c instanceof Table) checkTable(t, name, c);
+        if (c instanceof Table) checkTable(t, name, c, fills);
         const formRec = c.childRecord(TAG.FORM_OBJECT);
         if (formRec) {
           let f = null;
@@ -159,7 +168,11 @@ async function checkHwp5() {
       }
     }
   }
-  console.log(`\nhwp5: ${unsupported} unsupported documents skipped`);
+  // Pairs of neighbours with different border/fills; most forms draw every inner line once, so nearly all agree.
+  const pct = ([agree, n]) => (n ? (100 * agree) / n : 100);
+  console.log(`\nC12 shared sides agree: left/right ${shared.across[0]} of ${shared.across[1]} (${pct(shared.across).toFixed(1)}%), top/bottom ${shared.down[0]} of ${shared.down[1]} (${pct(shared.down).toFixed(1)}%)`);
+  t.check('C12 neighbouring cells agree on shared sides (≥ 95% left/right, ≥ 90% top/bottom)', pct(shared.across) >= 95 && pct(shared.down) >= 90, 'corpus', 'too few agree');
+  console.log(`hwp5: ${unsupported} unsupported documents skipped`);
   return t.report('HWP 5.0');
 }
 
@@ -193,7 +206,10 @@ async function checkHwpx() {
       const ends = new Map(p.controls.filter((c) => c instanceof HwpxFieldEnd).map((c) => [c.beginId, c]));
       for (const c of p.controls) {
         if (c instanceof HwpxField) t.check('fieldBegin has its fieldEnd in the same paragraph', ends.has(c.fieldId), name, () => `${c.type} ${c.fieldId}`);
-        if (c instanceof HwpxTable) checkTiling(t, name, c);
+        if (c instanceof HwpxTable) {
+          checkTiling(t, name, c);
+          for (const cell of c.cells) t.check('C12 cell borderFillIDRef names a borderFill', !!doc.styles.borderFills[cell.borderFillId], name, () => `${cell.borderFillId}`);
+        }
       }
     }
   }
@@ -215,7 +231,7 @@ function checkTiling(t, name, table) {
   t.check('table cells tile the table', ok, name, () => `${table.rows}x${table.cols}`);
 }
 
-function checkTable(t, name, table) {
+function checkTable(t, name, table, fills) {
   const rec = table.childRecord(TAG.TABLE);
   const v = viewOf(rec.data);
   // Row sizes follow the 18-byte head of 표 75: attr, rows, cols, spacing, margins.
@@ -233,6 +249,22 @@ function checkTable(t, name, table) {
     }
   }
   t.check('C5 cell addresses at byte 8 tile the table', ok, name, () => `${table.rows}x${table.cols}`);
+  for (const c of table.cells) t.check('C12 cell border/fill id is at most the number of border/fills (ids from 1)', c.borderFillId <= fills.length, name, () => `${c.borderFillId} of ${fills.length}`);
+  // Sides are left, right, top, bottom, 6 bytes each from byte 2; fill ids count from 1.
+  const side = (c, k) => fills[c.borderFillId - 1]?.data.subarray(2 + 6 * k, 8 + 6 * k).join();
+  for (const a of table.cells) {
+    for (const b of table.cells) {
+      if (a.borderFillId === b.borderFillId || side(a, 0) === undefined || side(b, 0) === undefined) continue;
+      if (b.row === a.row && b.rowSpan === a.rowSpan && b.col === a.col + a.colSpan) {
+        shared.across[1]++;
+        if (side(a, 1) === side(b, 0)) shared.across[0]++;
+      }
+      if (b.col === a.col && b.colSpan === a.colSpan && b.row === a.row + a.rowSpan) {
+        shared.down[1]++;
+        if (side(a, 3) === side(b, 2)) shared.down[0]++;
+      }
+    }
+  }
 }
 
 let ok = true;

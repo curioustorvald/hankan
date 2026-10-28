@@ -5,7 +5,8 @@
 // alone, without rendering:
 //
 //   cell   an empty table cell, named by the label cells around it
-//          (to its left, the column header above it, or a question above);
+//          (to its left, the column header above it, or a question above),
+//          unless the form draws it as not for writing (unwritable());
 //   field  a click-here field (누름틀) whose content lies in one paragraph,
 //          named by its cell context, the text before it, its field name
 //          or its guide text;
@@ -57,7 +58,7 @@ export function findSlots(doc) {
       if (control.cells && !tableIndex.has(control)) {
         const t = tableIndex.size;
         tableIndex.set(control, t);
-        for (const slot of tableSlots(control, t)) {
+        for (const slot of tableSlots(doc, control, t)) {
           slots.push(slot);
           cellSlot.set(slot._cell, slot);
           for (const c of slot._labelCells) labelCells.add(c);
@@ -88,7 +89,7 @@ export function findSlots(doc) {
 
 // ---- tables ----------------------------------------------------------------
 
-function tableSlots(table, t) {
+function tableSlots(doc, table, t) {
   const grid = new Map();
   for (const cell of table.cells) {
     for (let r = cell.row; r < cell.row + cell.rowSpan; r++) {
@@ -97,12 +98,59 @@ function tableSlots(table, t) {
   }
   const at = (r, c) => (r < 0 || c < 0 ? null : grid.get(r * 65536 + c) ?? null);
   const info = new Map(table.cells.map((cell) => [cell, describeCell(cell, table)]));
+  const skip = unwritable(doc, table, at, info);
   const out = [];
   for (const cell of table.cells) {
     const me = info.get(cell);
-    if (!me.empty) continue;
+    if (!me.empty || skip.has(cell)) continue;
     const naming = nameCell(cell, table, at, info);
     out.push(makeCellSlot(cell, t, naming, me));
+  }
+  return out;
+}
+
+/** Rows lower than this (HWPUNIT; 3 mm) hold no line of writing. */
+const GAP_HEIGHT = 850;
+
+/**
+ * Empty cells the form draws as not for writing, from their borders
+ * (doc.cellBorder; see hwp5/docinfo.js, hwpx/header.js):
+ *   - a crossed-out cell (a diagonal), the form's "not applicable";
+ *   - a gap row: every cell of the row empty and without a left or right
+ *     line, as forms leave a space between parts or a thin row for a rule.
+ *     A row lower than a line of writing is always a gap. A taller one is
+ *     not when it can be a place to write: right under a full-width heading,
+ *     in a table drawn with horizontal rules only, or one of a run of ruled
+ *     lines (alike in height and rules).
+ */
+function unwritable(doc, table, at, info) {
+  const out = new Set();
+  if (!doc.cellBorder) return out;
+  const border = new Map(table.cells.map((c) => [c, doc.cellBorder(c)]));
+  for (const c of table.cells) {
+    const b = border.get(c);
+    if (info.get(c).empty && (b?.slash || b?.backSlash)) out.add(c);
+  }
+  const sided = table.cells.some((c) => border.get(c)?.left || border.get(c)?.right);
+  const rowCells = (r) => [...new Set(Array.from({ length: table.cols }, (_, k) => at(r, k)).filter(Boolean))];
+  const openRow = (r) => {
+    const cells = r >= 0 && r < table.rows ? rowCells(r) : [];
+    const open = (c) => c.row === r && c.rowSpan === 1 && info.get(c).bare && border.get(c) && !border.get(c).left && !border.get(c).right;
+    return cells.length && cells.every(open) ? cells : null;
+  };
+  const rule = (l) => (l ? `${l.type} ${l.width}` : '');
+  const height = (cells) => Math.max(...cells.map((c) => c.height));
+  const alike = (x, y) => !!y && Math.abs(height(x) - height(y)) <= 0.1 * height(x)
+    && x.every((c, i) => y[i] && rule(border.get(c).top) === rule(border.get(y[i]).top) && rule(border.get(c).bottom) === rule(border.get(y[i]).bottom));
+  for (let r = 0; r < table.rows; r++) {
+    const cells = openRow(r);
+    if (!cells) continue;
+    if (height(cells) >= GAP_HEIGHT) {
+      const above = r > 0 ? rowCells(r - 1) : [];
+      const heading = above.length === 1 && above[0].colSpan === table.cols && info.get(above[0]).text.trim() !== '';
+      if (heading || !sided || alike(cells, openRow(r - 1)) || alike(cells, openRow(r + 1))) continue;
+    }
+    for (const c of cells) out.add(c);
   }
   return out;
 }
@@ -110,6 +158,7 @@ function tableSlots(table, t) {
 function describeCell(cell, table) {
   const text = cell.paragraphs.map((p) => p.text).join('\n');
   let controls = 0;
+  let layout = 0; // section and column definitions (hwp5 표 6 code 2), which print nothing
   let outside = '';
   let fields = 0;
   for (const p of cell.paragraphs) {
@@ -119,6 +168,7 @@ function describeCell(cell, table) {
     for (const u of p.units()) {
       if (inField(u)) continue;
       if (u.type === 'control') controls++;
+      if (u.type === 'control' && u.code === 2) layout++;
       else if (u.type === 'text') outside += u.text;
     }
   }
@@ -126,6 +176,8 @@ function describeCell(cell, table) {
   return {
     text,
     empty,
+    // Nothing printed in it, though it may hold a section or column definition.
+    bare: empty || (controls === layout && fields === 0 && text.trim() === ''),
     // Holds click-here fields and nothing else: a blank for naming purposes.
     blank: empty || (fields > 0 && controls === 0 && outside.trim() === ''),
     // A cell of check boxes is a choice, not a label for its neighbours.

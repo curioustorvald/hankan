@@ -51,6 +51,11 @@ export class HwpxDocument {
     return this.styles.blackVariant(id);
   }
 
+  /** How a table cell's borders and background look (see hwpx/header.js), or null. */
+  cellBorder(cell) {
+    return this.styles.borderFills[cell.borderFillId] ?? null;
+  }
+
   paraAlign(paragraph) {
     return this.styles.paraShapes[paragraph.paraShapeId]?.align ?? 'justify';
   }
